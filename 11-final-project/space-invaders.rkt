@@ -1,6 +1,6 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-beginner-abbr-reader.ss" "lang")((modname space-invaders) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+#reader(lib "htdp-beginner-reader.ss" "lang")((modname space-invaders) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
 (require 2htdp/universe)
 (require 2htdp/image)
 
@@ -179,16 +179,15 @@
 
 ;; ListOfInvader ListOfMissile -> ListOfInvader
 ;; produce the next list of invader state
-;; !!!
 (check-expect (next-loi empty empty) empty)
 (check-expect (next-loi (cons (make-invader 30 50 -1) empty) empty)
               (cons (make-invader (+ (* INVADER-X-SPEED -1) 30) (+ INVADER-Y-SPEED 50) -1) empty))
 
 (define (next-loi loi new-lom)
   (cond [(empty? loi) empty]
-        [else (if ()
-                  (... (first loi)           
-                       (next-loi (rest loi)))]))
+        [else (if (areColliding? new-lom (first loi))
+                  (next-loi (rest loi) new-lom)           
+                  (cons (next-invader (first loi)) (next-loi (rest loi) new-lom)))]))
 
 
 ;; Invader -> Invader
@@ -274,7 +273,16 @@
       true))
 
 
-;; ListOfMissile
+;; ListOfMissile Invader -> Boolean
+;; produces true if invader is colliding with any missile
+
+(define (areColliding? lom i)
+  (cond [(or (empty? lom)
+             (empty? i))
+         false]
+        [else (if (isColliding? (first lom) i)
+                  true
+                  (areColliding? (rest lom) i))]))
 
 
 ;; Tank -> Tank
@@ -376,12 +384,39 @@
 ;; end game if an invader reaches the bottom of screen
 ;; !!!
 
-(define (finish-game? game) false)  ;stub
+(define (finish-game? g) false)  ;stub
+
+
+;; Game KeyEvent -> Game
+;; handle spacebar and left or right arrow keys press
+(check-expect (handle-key G0 " ") (handle-spacebar G0))
+(check-expect (handle-key G0 "left") (handle-arrow G0 "left"))
+(check-expect (handle-key G0 "right") (handle-arrow G0 "right"))
+(check-expect (handle-key G0 "a") G0)
+
+(define (handle-key g ke)
+  (cond [(key=? " " ke) (handle-spacebar g)]
+        [(or (key=? "left" ke) (key=? "right" ke))
+         (handle-arrow g ke)]
+        [else g]))
 
 
 ;; Game KeyEvent -> Game
 ;; change tank direction when pressing left or right arrow key
+(check-expect (handle-arrow G0 "left") (make-game empty empty (make-tank (tank-x (game-tank G0)) -1)))
+(check-expect (handle-arrow G0 "right") (make-game empty empty (make-tank (tank-x (game-tank G0)) 1)))
+(check-expect (handle-arrow G0 "f") G0)
+
+(define (handle-arrow g ke)
+  (if (key=? "left" ke)
+      (make-game (game-invaders g) (game-missiles g) (make-tank (tank-x (game-tank G0)) -1))
+      (make-game (game-invaders g) (game-missiles g) (make-tank (tank-x (game-tank G0)) 1))))
+
+
+;; Game -> Game
 ;; shoot a missile when pressing space bar
 ;; !!!
+(check-expect (handle-spacebar G0) (make-game empty (cons (make-missile) empty) T0))
 
-(define (handle-key game ke) G0)  ;stub
+(define (handle-spacebar g)
+  (make-game (game-invaders g) (cons (make-missile) (game-missiles g)) (game-tank g)))
