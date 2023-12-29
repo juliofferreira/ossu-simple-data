@@ -382,9 +382,35 @@
 
 ;; Game -> Boolean
 ;; end game if an invader reaches the bottom of screen
-;; !!!
 
-(define (finish-game? g) false)  ;stub
+(define (finish-game? g)
+  (invaders-hit-bottom? (game-invaders g)))
+
+
+;; ListOfInvader -> Boolean
+;; produce true if any invader is colliding with bottom wall
+(check-expect (invaders-hit-bottom? empty) false)
+(check-expect (invaders-hit-bottom? (cons (make-invader 10 20 1) empty)) false)
+(check-expect (invaders-hit-bottom? (cons (make-invader 40 HEIGHT 1) empty)) true)
+(check-expect (invaders-hit-bottom? (cons (make-invader 60 (- HEIGHT 2) 1) empty)) true)
+
+(define (invaders-hit-bottom? loi)
+  (cond [(empty? loi) false]
+        [else (if (invader-hit-bottom? (first loi))
+                  true
+                  (invaders-hit-bottom? (rest loi)))]))
+
+
+;; Invader -> Boolean
+;; produce true if invader is colliding with bottom wall
+(check-expect (invader-hit-bottom? (make-invader 10 20 1)) false)
+(check-expect (invader-hit-bottom? (make-invader 40 HEIGHT 1)) true)
+(check-expect (invader-hit-bottom? (make-invader 60 (- HEIGHT 2) 1)) true)
+
+(define (invader-hit-bottom? i)
+  (if (>= (+ INVADER-HEIGHT/2 (invader-y i)) HEIGHT) 
+      true
+      false))
 
 
 ;; Game KeyEvent -> Game
@@ -409,14 +435,18 @@
 
 (define (handle-arrow g ke)
   (if (key=? "left" ke)
-      (make-game (game-invaders g) (game-missiles g) (make-tank (tank-x (game-tank G0)) -1))
-      (make-game (game-invaders g) (game-missiles g) (make-tank (tank-x (game-tank G0)) 1))))
+      (make-game (game-invaders g) (game-missiles g) (make-tank (tank-x (game-tank g)) -1))
+      (make-game (game-invaders g) (game-missiles g) (make-tank (tank-x (game-tank g)) 1))))
 
 
 ;; Game -> Game
 ;; shoot a missile when pressing space bar
-;; !!!
-(check-expect (handle-spacebar G0) (make-game empty (cons (make-missile) empty) T0))
+(check-expect (handle-spacebar G0) (make-game
+                                    empty
+                                    (cons (make-missile (tank-x T0) (- HEIGHT (+  (* 2 TANK-HEIGHT/2) MISSILE-HEIGHT/2))) empty)
+                                    T0))
 
 (define (handle-spacebar g)
-  (make-game (game-invaders g) (cons (make-missile) (game-missiles g)) (game-tank g)))
+  (make-game (game-invaders g)
+             (cons (make-missile (tank-x (game-tank g)) (- HEIGHT (+ (* 2 TANK-HEIGHT/2) MISSILE-HEIGHT/2))) (game-missiles g))
+             (game-tank g)))
