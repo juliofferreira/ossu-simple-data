@@ -19,7 +19,7 @@
 
 (define HIT-RANGE 10)
 
-(define INVADE-RATE 100)
+(define INVADE-RATE 70)
 
 (define BACKGROUND (empty-scene WIDTH HEIGHT))
 
@@ -171,10 +171,10 @@
 
 
 ;; ListOfInvader ListOfMissile Tank -> Game
-;; produce next game, function objective is to reduce times next-lom has to run
+;; produce next game, function purpose is to reduce times next-lom has to run
 ;;  by receiving it as parameter
 (define (next-game-intermediate old-loi new-lom new-tank)
-  (make-game (next-loi old-loi new-lom) new-lom new-tank))
+  (make-game (next-loi (spawn-invader old-loi) new-lom) new-lom new-tank))
 
 
 ;; ListOfInvader ListOfMissile -> ListOfInvader
@@ -190,6 +190,15 @@
                   (cons (next-invader (first loi)) (next-loi (rest loi) new-lom)))]))
 
 
+;; ListOfInvader -> ListOfInvader
+;; produce new list of invader with a new invader
+
+(define (spawn-invader loi)
+  (if (= (random INVADE-RATE) (- INVADE-RATE 1))
+      (cons (make-invader (random WIDTH) 0 (if (= (random 2) 0) 1 -1)) loi)
+      loi))
+
+
 ;; Invader -> Invader
 ;; produce next invader
 (check-expect (next-invader (make-invader 30 50 -1))
@@ -197,17 +206,17 @@
 (check-expect (next-invader (make-invader 20 60 1))
               (make-invader (+ (* INVADER-X-SPEED 1) 20) (+ INVADER-Y-SPEED 60) 1))
 (check-expect (next-invader (make-invader 0 60 -1))
-              (make-invader 0 (+ INVADER-Y-SPEED 60) 1))
+              (make-invader (+ 0 INVADER-WIDTH/2) (+ INVADER-Y-SPEED 60) 1))
 (check-expect (next-invader (make-invader WIDTH 60 1))
-              (make-invader WIDTH (+ INVADER-Y-SPEED 60) -1))
+              (make-invader (- WIDTH INVADER-WIDTH/2) (+ INVADER-Y-SPEED 60) -1))
 
 (define (next-invader i)
   (cond [(and (check-side-collision (+ (invader-x i) (* INVADER-X-SPEED (invader-xdir i))) INVADER)
               (= (invader-xdir i) -1))
-         (make-invader 0 (+ INVADER-Y-SPEED (invader-y i)) 1)]
+         (make-invader (+ 0 INVADER-WIDTH/2) (+ INVADER-Y-SPEED (invader-y i)) 1)]
         [(and (check-side-collision (+ (invader-x i) (* INVADER-X-SPEED (invader-xdir i))) INVADER)
               (= (invader-xdir i) 1))
-         (make-invader WIDTH (+ INVADER-Y-SPEED (invader-y i)) -1)]
+         (make-invader (- WIDTH INVADER-WIDTH/2) (+ INVADER-Y-SPEED (invader-y i)) -1)]
         [else (make-invader (+ (invader-x i) (* INVADER-X-SPEED (invader-xdir i)))
                             (+ INVADER-Y-SPEED (invader-y i))
                             (invader-xdir i))]))
